@@ -117,7 +117,10 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.setInputFiles('#lib', { name: 'brush.png', mimeType: 'image/png', buffer: PHOTO });
   await page.waitForSelector('.photo-preview[src^="blob:"]');
   await page.fill('#name', 'Toothbrush');
-  await page.fill('#brand', 'Oral-B');
+  await page.selectOption('#brand', '__new__');
+  await page.fill('dialog input', 'Oral-B');
+  await page.click('dialog button[value="ok"]');
+  await page.waitForFunction(() => document.querySelector('#brand')?.value === 'Oral-B');
   await page.click('[data-cat="Personal care"]');
   await page.fill('#got', '2026-07-01');
   await page.click('[data-quick="3"]');
@@ -159,6 +162,16 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.locator('#grid .item-card', { hasText: 'Toothbrush' }).waitFor();
   await page.selectOption('#brand-filter', '');
   assert.equal(await page.locator('#grid .item-card').count(), 2);
+
+  // The brand dropdown offers brands already used, and reuses their spelling.
+  await page.click('.fab');
+  await page.waitForSelector('#brand');
+  assert.deepEqual(await page.locator('#brand option').allTextContents(), ['No brand', 'Oral-B', '+ New brand…']);
+  await page.selectOption('#brand', '__new__');
+  await page.fill('dialog input', 'oral-b');
+  await page.click('dialog button[value="ok"]');
+  await page.waitForFunction(() => document.querySelector('#brand')?.value === 'Oral-B');
+  await page.goto(`${base}#/`);
 
   // "I replaced it" restarts the same 3-month lifespan from today.
   await page.locator('.item-card', { hasText: 'Toothbrush' }).click();

@@ -7,6 +7,16 @@ import { esc, icon, promptDialog, toast } from '../ui.js';
 const QUICK = [[1, '+1 month'], [3, '+3 months'], [6, '+6 months'], [12, '+1 year'], [24, '+2 years']];
 
 let form; // the form being edited; kept across re-renders of this screen
+const NEW_BRAND = '__new__';
+
+/** Brands to pick from: every brand in use, plus the one this form holds if it's new. */
+function brandChoices() {
+  const brands = brandsOf(store.items());
+  if (form.brand && !brands.some((b) => b.toLowerCase() === form.brand.toLowerCase())) {
+    return brandsOf([...brands.map((brand) => ({ brand })), { brand: form.brand }]);
+  }
+  return brands;
+}
 
 function startForm(id) {
   const it = id ? store.findItem(id) : null;
@@ -66,8 +76,11 @@ export function render({ params }) {
     </label>
 
     <label class="field"><span class="field-label">Brand <span class="muted">(optional)</span></span>
-      <input class="input" id="brand" name="brand" maxlength="60" placeholder="e.g. Oral-B, Royal Canin, Apple" value="${esc(form.brand)}" autocomplete="off" list="brand-list">
-      <datalist id="brand-list">${brandsOf(store.items()).map((b) => `<option value="${esc(b)}"></option>`).join('')}</datalist>
+      <select class="input" id="brand" name="brand">
+        <option value=""${form.brand ? '' : ' selected'}>No brand</option>
+        ${brandChoices().map((b) => `<option value="${esc(b)}"${b === form.brand ? ' selected' : ''}>${esc(b)}</option>`).join('')}
+        <option value="${NEW_BRAND}">+ New brand…</option>
+      </select>
     </label>
 
     <div class="field"><span class="field-label" id="cat-label">Category</span>
@@ -116,7 +129,7 @@ export function mount(root) {
   const $ = (s) => root.querySelector(s);
   const sync = () => {
     form.name = $('#name').value;
-    form.brand = $('#brand').value;
+    if ($('#brand').value !== NEW_BRAND) form.brand = $('#brand').value;
     form.got = $('#got').value;
     form.exp = $('#exp').value;
     form.notes = $('#notes').value;
@@ -153,6 +166,18 @@ export function mount(root) {
     form.category = form.category === b.dataset.cat ? '' : b.dataset.cat;
     rerender();
   }));
+  $('#brand').addEventListener('change', async (e) => {
+    if (e.target.value !== NEW_BRAND) {
+      form.brand = e.target.value;
+      return;
+    }
+    const name = await promptDialog({ title: 'New brand', label: 'Brand name', ok: 'Add' });
+    if (name) {
+      // Reuse the existing spelling if this brand is already in use ("oral-b" → "Oral-B").
+      form.brand = brandChoices().find((b) => b.toLowerCase() === name.toLowerCase()) || name;
+    }
+    rerender();
+  });
   $('[data-act="new-cat"]').addEventListener('click', async () => {
     const name = await promptDialog({ title: 'New category', label: 'Name', ok: 'Add' });
     if (!name) return;
