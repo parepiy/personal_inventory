@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-accent="pink" data-paws="on">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pawventory</title>
+  <meta name="description" content="Track your belongings, how old they are, and when to replace them.">
+  <meta name="theme-color" content="#FDF6FA">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Pawventory">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Apply the saved theme before first paint so there's no flash.
+    try {
+      const p = JSON.parse(localStorage.getItem('paw.prefs') || '{}');
+      const dark = p.theme === 'dark' || ((p.theme || 'auto') === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+      const r = document.documentElement;
+      r.dataset.theme = dark ? 'dark' : 'light';
+      r.dataset.accent = p.accent || 'pink';
+      r.dataset.paws = p.paws === false ? 'off' : 'on';
+    } catch (e) { /* defaults */ }
+  </script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body data-screen="loading">
+  <div id="view" class="view">
+    <div class="loading" aria-label="Loading">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="5.5" cy="10" rx="2" ry="2.5"/><ellipse cx="9.5" cy="5.8" rx="2" ry="2.6"/><ellipse cx="14.5" cy="5.8" rx="2" ry="2.6"/><ellipse cx="18.5" cy="10" rx="2" ry="2.5"/><path d="M12 12.2c-2.7 0-5.6 3.3-5.6 5.8 0 1.6 1.2 2.5 2.6 2.5 1.2 0 2-.6 3-.6s1.8.6 3 .6c1.4 0 2.6-.9 2.6-2.5 0-2.5-2.9-5.8-5.6-5.8z"/></svg>
+    </div>
+  </div>
+
+  <nav class="tabbar" aria-label="Main">
+    <a href="#/" data-tab="home">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#/calendar" data-tab="calendar">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      <span>Calendar</span>
+    </a>
+    <div class="fab-slot">
+      <a href="#/add" class="fab" aria-label="Add a new item">
+        <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </a>
+    </div>
+    <a href="#/reminders" data-tab="reminders">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>
+      <span>Reminders</span>
+    </a>
+    <a href="#/settings" data-tab="settings">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      <span>Settings</span>
+    </a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,44 @@
+# Installed and kept up to date by the Pawventory app — edits here get overwritten.
+# Sends the daily expiry notification. The time comes from Reminders → "Daily check at".
+name: Pawventory reminders
+
+on:
+  schedule:
+    - cron: '__CRON__'
+  workflow_dispatch:
+    inputs:
+      test:
+        description: Send a test notification
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pawventory-reminders
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install web-push
+        working-directory: scripts
+        run: npm install --no-save --no-audit --no-fund web-push@3.6.7
+      - name: Send today's reminder
+        run: node scripts/remind-job.mjs
+        env:
+          PAW_TEST: ${{ inputs.test }}
+      - name: Forget devices that unsubscribed
+        run: |
+          if ! git diff --quiet -- push/subscriptions.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Remove expired push subscriptions" -- push/subscriptions.json
+            git push || echo "Could not save; will retry tomorrow"
+          fi
