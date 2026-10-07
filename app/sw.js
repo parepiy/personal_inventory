@@ -1,6 +1,6 @@
 // Service worker: works offline, shows push notifications, opens the app when one is tapped.
 
-const CACHE = 'pawventory-v3';
+const CACHE = 'pawventory-v4';
 const SHELL = [
   './',
   './index.html',
