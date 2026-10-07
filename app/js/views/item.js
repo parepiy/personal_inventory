@@ -33,7 +33,10 @@ export function render({ params }) {
   </div>
   <main class="page page-detail">
     <div class="stack-tight">
-      ${it.category ? `<span class="pill pill-soft">${esc(it.category)}</span>` : ''}
+      ${it.category || it.brand ? `<div class="chip-row">
+        ${it.category ? `<span class="pill pill-soft">${esc(it.category)}</span>` : ''}
+        ${it.brand ? `<span class="pill pill-brand">${esc(it.brand)}</span>` : ''}
+      </div>` : ''}
       <h1 class="h1">${esc(it.name)}</h1>
     </div>
     ${banner ? `<div class="banner ${banner.cls}">${icon.clock(26)}

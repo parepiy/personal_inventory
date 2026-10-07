@@ -117,6 +117,7 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.setInputFiles('#lib', { name: 'brush.png', mimeType: 'image/png', buffer: PHOTO });
   await page.waitForSelector('.photo-preview[src^="blob:"]');
   await page.fill('#name', 'Toothbrush');
+  await page.fill('#brand', 'Oral-B');
   await page.click('[data-cat="Personal care"]');
   await page.fill('#got', '2026-07-01');
   await page.click('[data-quick="3"]');
@@ -135,6 +136,8 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   const card = page.locator('.item-card', { hasText: 'Toothbrush' });
   await card.getByText('3 mos old').waitFor();
   await card.getByText('Expired 5 days ago').waitFor();
+  await card.getByText('Oral-B').waitFor();
+  assert.equal(JSON.parse(gh.text('data/items.json')).items[0].brand, 'Oral-B');
   await page.getByText('1 thing needs your attention').waitFor();
   await card.locator('img.photo-img').waitFor();
 
@@ -149,6 +152,13 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.goto(`${base}#/`);
   await page.locator('.item-card', { hasText: 'Passport' }).getByText('7 yrs 6 mos old').waitFor();
   await page.getByText('2 things need your attention').waitFor();
+
+  // Brand filter shows only that brand's things.
+  await page.selectOption('#brand-filter', 'Oral-B');
+  assert.equal(await page.locator('#grid .item-card').count(), 1);
+  await page.locator('#grid .item-card', { hasText: 'Toothbrush' }).waitFor();
+  await page.selectOption('#brand-filter', '');
+  assert.equal(await page.locator('#grid .item-card').count(), 2);
 
   // "I replaced it" restarts the same 3-month lifespan from today.
   await page.locator('.item-card', { hasText: 'Toothbrush' }).click();

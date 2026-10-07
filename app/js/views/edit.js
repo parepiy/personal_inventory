@@ -1,6 +1,6 @@
 import * as store from '../store.js';
 import { addMonths, isISODate } from '../dates.js';
-import { REMIND_CHOICES } from '../model.js';
+import { REMIND_CHOICES, brandsOf } from '../model.js';
 import { shrink } from '../photos.js';
 import { esc, icon, promptDialog, toast } from '../ui.js';
 
@@ -14,6 +14,7 @@ function startForm(id) {
   form = {
     id: it?.id || null,
     name: it?.name || '',
+    brand: it?.brand || '',
     category: it?.category || '',
     got: it?.got || store.today(),
     expires: it ? Boolean(it.exp) : true,
@@ -64,6 +65,11 @@ export function render({ params }) {
       <input class="input" id="name" name="name" required maxlength="80" placeholder="e.g. Passport, toothbrush, dog food" value="${esc(form.name)}" autocomplete="off">
     </label>
 
+    <label class="field"><span class="field-label">Brand <span class="muted">(optional)</span></span>
+      <input class="input" id="brand" name="brand" maxlength="60" placeholder="e.g. Oral-B, Royal Canin, Apple" value="${esc(form.brand)}" autocomplete="off" list="brand-list">
+      <datalist id="brand-list">${brandsOf(store.items()).map((b) => `<option value="${esc(b)}"></option>`).join('')}</datalist>
+    </label>
+
     <div class="field"><span class="field-label" id="cat-label">Category</span>
       <div class="chip-row" role="group" aria-labelledby="cat-label">
         ${allCats.map((c) => `<button type="button" class="chip${c === form.category ? ' is-on' : ''}" data-cat="${esc(c)}" aria-pressed="${c === form.category}">${esc(c)}</button>`).join('')}
@@ -110,6 +116,7 @@ export function mount(root) {
   const $ = (s) => root.querySelector(s);
   const sync = () => {
     form.name = $('#name').value;
+    form.brand = $('#brand').value;
     form.got = $('#got').value;
     form.exp = $('#exp').value;
     form.notes = $('#notes').value;
@@ -192,6 +199,7 @@ export function mount(root) {
     const saved = await store.saveItem({
       ...(form.id ? { id: form.id } : {}),
       name: form.name.trim(),
+      brand: form.brand.trim(),
       category: form.category,
       got: form.got,
       exp: form.expires ? form.exp : null,

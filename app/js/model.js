@@ -41,6 +41,7 @@ export function normalize(data, timeZone) {
     schema: SCHEMA,
     items: items.map((it) => ({
       name: '',
+      brand: '',
       category: '',
       got: null,
       exp: null,
@@ -81,6 +82,16 @@ export function merge(a, b) {
 }
 
 export const liveItems = (data) => data.items.filter((it) => !it.deleted);
+
+/** Brands in use, A to Z, one entry per brand whatever its capitalisation. */
+export function brandsOf(items) {
+  const seen = new Map();
+  for (const it of items) {
+    const b = (it.brand || '').trim();
+    if (b && !seen.has(b.toLowerCase())) seen.set(b.toLowerCase(), b);
+  }
+  return [...seen.values()].sort((a, z) => a.localeCompare(z, undefined, { sensitivity: 'base' }));
+}
 
 export function sameData(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);

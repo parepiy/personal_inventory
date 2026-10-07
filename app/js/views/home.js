@@ -2,8 +2,9 @@ import * as store from '../store.js';
 import { ageText, formatMonthYear, itemStatus } from '../dates.js';
 import { badge, esc, icon, photoTile, themeToggle } from '../ui.js';
 import { isDark } from '../prefs.js';
+import { brandsOf } from '../model.js';
 
-const view = { category: 'All', query: '', sort: 'expiry' };
+const view = { category: 'All', brand: '', query: '', sort: 'expiry' };
 
 const SORTS = [
   ['expiry', 'Expiry'],
@@ -30,6 +31,7 @@ function card({ it, st }, today) {
   return `<a class="card item-card" href="#/item/${encodeURIComponent(it.id)}">
     ${photoTile(it, 'photo-card')}
     <span class="card-name">${esc(it.name)}</span>
+    ${it.brand ? `<span class="card-brand">${esc(it.brand)}</span>` : ''}
     <span class="card-age">${icon.clock()} ${esc(ageText(it.got, today))}</span>
     ${it.got ? `<span class="card-sub">Got ${esc(formatMonthYear(it.got))}</span>` : ''}
     ${badge(st)}
@@ -38,10 +40,12 @@ function card({ it, st }, today) {
 
 function gridHTML(rows, today) {
   const q = view.query.trim().toLowerCase();
+  const brand = view.brand.toLowerCase();
   const shown = sortRows(rows.filter(({ it }) => (view.category === 'All' || it.category === view.category)
-    && (!q || `${it.name} ${it.category} ${it.notes}`.toLowerCase().includes(q))));
+    && (!brand || (it.brand || '').trim().toLowerCase() === brand)
+    && (!q || `${it.name} ${it.brand || ''} ${it.category} ${it.notes}`.toLowerCase().includes(q))));
   if (!shown.length) {
-    return `<p class="empty-note">${icon.paw(20)} ${rows.length ? 'Nothing matches. Try another search or category.' : ''}</p>`;
+    return `<p class="empty-note">${icon.paw(20)} ${rows.length ? 'Nothing matches. Try another search, category or brand.' : ''}</p>`;
   }
   return shown.map((r) => card(r, today)).join('');
 }
@@ -57,6 +61,8 @@ export function render() {
   const cats = ['All', ...store.state.data.categories.list.filter((c) => used.has(c)),
     ...[...used].filter((c) => !store.state.data.categories.list.includes(c))];
   if (!cats.includes(view.category)) view.category = 'All';
+  const brands = brandsOf(rows.map((r) => r.it));
+  if (view.brand && !brands.some((b) => b.toLowerCase() === view.brand.toLowerCase())) view.brand = '';
   const dateLine = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
   let hero;
@@ -117,8 +123,11 @@ export function render() {
       <button class="chip${c === view.category ? ' is-on' : ''}" data-cat="${esc(c)}" aria-pressed="${c === view.category}">${esc(c)}</button>`).join('')}
     </div>
     <section class="stack">
-      <div class="section-head">
-        <h2 class="h2">All belongings <span class="muted">· ${rows.length}</span></h2>
+      <h2 class="h2">All belongings <span class="muted">· ${rows.length}</span></h2>
+      <div class="filter-row">
+        ${brands.length ? `<label class="sort"><span class="visually-hidden">Brand</span>
+          <select id="brand-filter"><option value="">All brands</option>${brands.map((b) => `<option value="${esc(b)}"${b.toLowerCase() === view.brand.toLowerCase() ? ' selected' : ''}>${esc(b)}</option>`).join('')}</select>
+        </label>` : ''}
         <label class="sort"><span class="visually-hidden">Sort by</span>
           <select id="sort">${SORTS.map(([v, l]) => `<option value="${v}"${v === view.sort ? ' selected' : ''}>Sort: ${l}</option>`).join('')}</select>
         </label>
@@ -139,6 +148,10 @@ export function mount(root) {
   };
   root.querySelector('#search')?.addEventListener('input', (e) => {
     view.query = e.target.value;
+    refresh();
+  });
+  root.querySelector('#brand-filter')?.addEventListener('change', (e) => {
+    view.brand = e.target.value;
     refresh();
   });
   root.querySelector('#sort')?.addEventListener('change', (e) => {

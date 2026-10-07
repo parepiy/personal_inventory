@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, merge, normalize, referencedPhotos, sameData } from '../app/js/model.js';
+import { brandsOf, emptyData, merge, normalize, referencedPhotos, sameData } from '../app/js/model.js';
 
 const item = (id, fields) => ({ id, name: id, createdAt: 1, updatedAt: 1, deleted: false, ...fields });
 
@@ -43,4 +43,10 @@ test('normalize repairs partial or odd files', () => {
 test('only live items keep their photos', () => {
   const d = { ...emptyData('UTC'), items: [item('a', { photo: 'photos/a.jpg' }), item('b', { photo: 'photos/b.jpg', deleted: true })] };
   assert.deepEqual([...referencedPhotos(d)], ['photos/a.jpg']);
+});
+
+test('brands are listed once each, A to Z, ignoring case and blanks', () => {
+  const items = [{ brand: 'oral-B' }, { brand: 'Apple' }, { brand: ' Oral-B ' }, { brand: '' }, {}];
+  assert.deepEqual(brandsOf(items), ['Apple', 'oral-B']);
+  assert.equal(normalize({ items: [{ id: 'x' }] }, 'UTC').items[0].brand, '');
 });
