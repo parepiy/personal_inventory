@@ -1,6 +1,6 @@
 // Service worker: works offline, shows push notifications, opens the app when one is tapped.
 
-const CACHE = 'pawventory-v4';
+const CACHE = 'pawventory-v5';
 const SHELL = [
   './',
   './index.html',
@@ -62,7 +62,9 @@ self.addEventListener('fetch', (event) => {
     event.respondWith((async () => {
       const c = await caches.open(CACHE);
       try {
-        const res = await fetch(request);
+        // Always ask the server whether a file changed (GitHub Pages otherwise lets
+        // phones reuse files for 10 minutes, so updates seemed not to arrive).
+        const res = await fetch(url.href, { cache: 'no-cache', credentials: 'same-origin' });
         if (res.ok) c.put(request, res.clone());
         return res;
       } catch {
