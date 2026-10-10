@@ -5,6 +5,16 @@ export const SCHEMA = 1;
 
 export const DEFAULT_CATEGORIES = ['Documents', 'Personal care', 'Pet', 'Tech', 'Home', 'Clothing'];
 
+// Starting sub-categories (edit them in Settings → Categories).
+export const DEFAULT_SUBCATEGORIES = {
+  Documents: ['Passport', 'ID card', 'Driving licence', 'Insurance', 'Warranty'],
+  'Personal care': ['Shampoo', 'Conditioner', 'Liquid soap', 'Body lotion', 'Toothpaste', 'Toothbrush', 'Skincare'],
+  Pet: ['Food', 'Treats', 'Medicine', 'Grooming', 'Toys'],
+  Tech: ['Phone', 'Computer', 'Accessories', 'Batteries'],
+  Home: ['Cleaning', 'Kitchen', 'Filters', 'Bedding'],
+  Clothing: ['Shoes', 'Tops', 'Bottoms', 'Underwear'],
+};
+
 export const REMIND_CHOICES = [1, 3, 7, 14, 30];
 
 export function defaultSettings(timeZone) {
@@ -22,7 +32,7 @@ export function emptyData(timeZone) {
   return {
     schema: SCHEMA,
     items: [],
-    categories: { list: [...DEFAULT_CATEGORIES], updatedAt: 0 },
+    categories: { list: [...DEFAULT_CATEGORIES], subs: structuredClone(DEFAULT_SUBCATEGORIES), updatedAt: 0 },
     settings: defaultSettings(timeZone),
   };
 }
@@ -31,6 +41,22 @@ export function newId() {
   const rand = Math.random().toString(36).slice(2, 8);
   return `${Date.now().toString(36)}${rand}`;
 }
+
+const strings = (xs) => (Array.isArray(xs) ? xs.filter((x) => typeof x === 'string' && x.trim()) : []);
+
+/** Category list plus each category's sub-categories (files from before sub-categories get the defaults). */
+function normalizeCategories(c) {
+  const list = strings(c.list);
+  const subs = {};
+  for (const cat of list) {
+    if (c.subs && typeof c.subs === 'object') subs[cat] = strings(c.subs[cat]);
+    else subs[cat] = [...(DEFAULT_SUBCATEGORIES[cat] || [])];
+  }
+  return { list, subs, updatedAt: c.updatedAt || 0 };
+}
+
+/** Sub-categories of a category, in the order they were added. */
+export const subsOf = (categories, cat) => (cat && categories.subs?.[cat]) || [];
 
 /** Fills in anything missing so older or hand-edited files still load. */
 export function normalize(data, timeZone) {
@@ -43,6 +69,7 @@ export function normalize(data, timeZone) {
       name: '',
       brand: '',
       category: '',
+      subcategory: '',
       got: null,
       exp: null,
       remindDays: null,
@@ -55,7 +82,7 @@ export function normalize(data, timeZone) {
       ...it,
     })),
     categories: data.categories && Array.isArray(data.categories.list)
-      ? { list: data.categories.list.filter((c) => typeof c === 'string'), updatedAt: data.categories.updatedAt || 0 }
+      ? normalizeCategories(data.categories)
       : base.categories,
     settings: { ...base.settings, ...(data.settings || {}) },
   };

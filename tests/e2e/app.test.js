@@ -122,6 +122,7 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.click('dialog button[value="ok"]');
   await page.waitForFunction(() => document.querySelector('#brand')?.value === 'Oral-B');
   await page.click('[data-cat="Personal care"]');
+  await page.click('[data-sub="Toothbrush"]');
   await page.fill('#got', '2026-07-01');
   await page.click('[data-quick="3"]');
   assert.equal(await page.inputValue('#exp'), '2026-10-01');
@@ -129,6 +130,7 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.waitForURL(/#\/item\//);
   await page.getByText('Expired 5 days ago').first().waitFor();
   await page.getByText('3 mos', { exact: true }).waitFor();
+  await page.getByText('Personal care › Toothbrush').waitFor();
 
   await until(() => [...gh.files.keys()].some((p) => p.startsWith('photos/')) && gh.text('data/items.json').includes('Toothbrush'), 'item + photo upload');
   const photoPath = [...gh.files.keys()].find((p) => p.startsWith('photos/'));
@@ -162,6 +164,13 @@ test('connects to GitHub, syncs items with photos, and installs the reminder job
   await page.locator('#grid .item-card', { hasText: 'Toothbrush' }).waitFor();
   await page.selectOption('#brand-filter', '');
   assert.equal(await page.locator('#grid .item-card').count(), 2);
+
+  // Picking a category shows its sub-categories in use; picking one filters the grid.
+  await page.click('[data-cat="Personal care"]');
+  await page.click('.chips-sub [data-sub="Toothbrush"]');
+  assert.equal(await page.locator('#grid .item-card').count(), 1);
+  await page.click('[data-cat="All"]');
+  assert.equal(await page.locator('.chips-sub').count(), 0);
 
   // The brand dropdown offers brands already used, and reuses their spelling.
   await page.click('.fab');

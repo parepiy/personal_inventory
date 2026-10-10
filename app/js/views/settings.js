@@ -44,6 +44,8 @@ function syncCard() {
 export function render() {
   const cats = store.state.data.categories.list;
   const used = new Set(store.items().map((it) => it.category));
+  const usedSubs = new Set(store.items().map((it) => `${it.category}\u0000${it.subcategory || ''}`));
+  const subs = (c) => store.state.data.categories.subs?.[c] || [];
   const modes = [['light', 'Light'], ['dark', 'Dark'], ['auto', 'Auto']];
   return `
   <header class="topbar">
@@ -84,8 +86,14 @@ export function render() {
     <section class="stack-tight">
       <h2 class="caps">Categories</h2>
       <div class="card list">
-        ${cats.map((c) => `<div class="list-link"><span class="strong">${esc(c)}</span>
-          <button class="icon-btn icon-btn-small" data-del-cat="${esc(c)}" aria-label="Remove category ${esc(c)}"${used.has(c) ? ' data-used="1"' : ''}>${icon.x()}</button></div>`).join('')}
+        ${cats.map((c) => `<div class="cat-block">
+          <div class="cat-head"><span class="strong">${esc(c)}</span>
+            <button class="icon-btn icon-btn-small" data-del-cat="${esc(c)}" aria-label="Remove category ${esc(c)}"${used.has(c) ? ' data-used="1"' : ''}>${icon.x()}</button></div>
+          <div class="chip-row">
+            ${subs(c).map((s) => `<span class="chip chip-sub chip-removable">${esc(s)}<button data-del-sub="${esc(s)}" data-cat="${esc(c)}" aria-label="Remove sub-category ${esc(s)}"${usedSubs.has(`${c}\u0000${s}`) ? ' data-used="1"' : ''}>${icon.x(14)}</button></span>`).join('')}
+            <button class="chip chip-dashed chip-small" data-add-sub="${esc(c)}">+ Add</button>
+          </div>
+        </div>`).join('')}
         <button class="list-link list-button" data-act="add-cat"><span class="strong">+ Add category</span></button>
       </div>
     </section>
@@ -144,6 +152,24 @@ export function mount(root) {
       if (!ok) return;
     }
     await store.setCategories(store.state.data.categories.list.filter((c) => c !== name));
+  }));
+  root.querySelectorAll('[data-del-sub]').forEach((b) => b.addEventListener('click', async () => {
+    const { delSub: name, cat } = b.dataset;
+    if (b.dataset.used) {
+      const ok = await confirmDialog({
+        title: `Remove "${name}"?`, body: 'Items with it keep the label; it just leaves this list.', ok: 'Remove', danger: true,
+      });
+      if (!ok) return;
+    }
+    await store.setSubcategories(cat, (store.state.data.categories.subs?.[cat] || []).filter((s) => s !== name));
+  }));
+  root.querySelectorAll('[data-add-sub]').forEach((b) => b.addEventListener('click', async () => {
+    const cat = b.dataset.addSub;
+    const name = await promptDialog({ title: `New ${cat} sub-category`, label: 'Name', ok: 'Add' });
+    const current = store.state.data.categories.subs?.[cat] || [];
+    if (name && !current.some((s) => s.toLowerCase() === name.toLowerCase())) {
+      await store.setSubcategories(cat, [...current, name]);
+    }
   }));
   $('[data-act="add-cat"]').addEventListener('click', async () => {
     const name = await promptDialog({ title: 'New category', label: 'Name', ok: 'Add' });
