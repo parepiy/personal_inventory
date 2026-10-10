@@ -209,9 +209,22 @@ export async function updateSettings(patch) {
   });
 }
 
+const tidy = (names) => [...new Set(names.map((n) => n.trim()).filter(Boolean))];
+
+/** Replaces the category list; sub-categories of removed categories go with them. */
 export async function setCategories(list) {
   await commit((d) => {
-    d.categories = { list: [...new Set(list.map((c) => c.trim()).filter(Boolean))], updatedAt: Date.now() };
+    const cats = tidy(list);
+    const subs = Object.fromEntries(cats.map((c) => [c, d.categories.subs?.[c] || []]));
+    d.categories = { list: cats, subs, updatedAt: Date.now() };
+  });
+}
+
+/** Replaces one category's sub-categories (adding the category if it's new). */
+export async function setSubcategories(category, names) {
+  await commit((d) => {
+    const list = d.categories.list.includes(category) ? d.categories.list : [...d.categories.list, category];
+    d.categories = { list, subs: { ...d.categories.subs, [category]: tidy(names) }, updatedAt: Date.now() };
   });
 }
 

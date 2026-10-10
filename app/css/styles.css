@@ -249,6 +249,17 @@ body[data-screen="setup"] .page { padding-bottom: 48px; }
 .chip-mint.is-on, .card .chip.is-on { background: var(--lav); color: var(--on-pastel); border-color: var(--lav); }
 .chip-mint.is-on { background: var(--mint); border-color: var(--mint); }
 .chip-dashed { border-style: dashed; color: var(--muted); }
+.chip-sub { min-height: 36px; padding: 0 14px; font-size: 13px; background: var(--surface-2); border-color: transparent; }
+.chip-sub.is-on, .card .chip-sub.is-on { background: var(--lav); color: var(--on-pastel); border-color: var(--lav); }
+.chips-sub { margin-top: -8px; }
+.chip-small { min-height: 36px; padding: 0 12px; font-size: 13px; }
+.chip-removable { display: inline-flex; align-items: center; gap: 2px; padding-right: 4px; cursor: default; }
+.chip-removable button {
+  width: 28px; height: 28px; border: none; border-radius: 50%; padding: 0;
+  background: transparent; color: var(--muted); display: grid; place-items: center;
+}
+.cat-block { padding: 12px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.cat-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .mini {
   min-height: 34px; padding: 0 10px; border-radius: 10px; border: none;
   background: var(--surface-2); color: var(--ink); font-size: 13px; font-weight: 800;

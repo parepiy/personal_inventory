@@ -2,9 +2,9 @@ import * as store from '../store.js';
 import { ageText, formatMonthYear, itemStatus } from '../dates.js';
 import { badge, esc, icon, photoTile, themeToggle } from '../ui.js';
 import { isDark } from '../prefs.js';
-import { brandsOf } from '../model.js';
+import { brandsOf, subsOf } from '../model.js';
 
-const view = { category: 'All', brand: '', query: '', sort: 'expiry' };
+const view = { category: 'All', sub: '', brand: '', query: '', sort: 'expiry' };
 
 const SORTS = [
   ['expiry', 'Expiry'],
@@ -33,7 +33,7 @@ function card({ it, st }, today) {
     <span class="card-name">${esc(it.name)}</span>
     ${it.brand ? `<span class="card-brand">${esc(it.brand)}</span>` : ''}
     <span class="card-age">${icon.clock()} ${esc(ageText(it.got, today))}</span>
-    ${it.got ? `<span class="card-sub">Got ${esc(formatMonthYear(it.got))}</span>` : ''}
+    ${it.got || it.subcategory ? `<span class="card-sub">${[it.subcategory, it.got ? `Got ${formatMonthYear(it.got)}` : ''].filter(Boolean).map(esc).join(' · ')}</span>` : ''}
     ${badge(st)}
   </a>`;
 }
@@ -42,8 +42,9 @@ function gridHTML(rows, today) {
   const q = view.query.trim().toLowerCase();
   const brand = view.brand.toLowerCase();
   const shown = sortRows(rows.filter(({ it }) => (view.category === 'All' || it.category === view.category)
+    && (!view.sub || it.subcategory === view.sub)
     && (!brand || (it.brand || '').trim().toLowerCase() === brand)
-    && (!q || `${it.name} ${it.brand || ''} ${it.category} ${it.notes}`.toLowerCase().includes(q))));
+    && (!q || `${it.name} ${it.brand || ''} ${it.category} ${it.subcategory || ''} ${it.notes}`.toLowerCase().includes(q))));
   if (!shown.length) {
     return `<p class="empty-note">${icon.paw(20)} ${rows.length ? 'Nothing matches. Try another search, category or brand.' : ''}</p>`;
   }
@@ -61,6 +62,11 @@ export function render() {
   const cats = ['All', ...store.state.data.categories.list.filter((c) => used.has(c)),
     ...[...used].filter((c) => !store.state.data.categories.list.includes(c))];
   if (!cats.includes(view.category)) view.category = 'All';
+  // Sub-categories in use within the chosen category, in the category's own order.
+  const usedSubs = new Set(rows.filter((r) => r.it.category === view.category).map((r) => r.it.subcategory).filter(Boolean));
+  const listed = subsOf(store.state.data.categories, view.category);
+  const subs = view.category === 'All' ? [] : [...listed.filter((s) => usedSubs.has(s)), ...[...usedSubs].filter((s) => !listed.includes(s))];
+  if (!subs.includes(view.sub)) view.sub = '';
   const brands = brandsOf(rows.map((r) => r.it));
   if (view.brand && !brands.some((b) => b.toLowerCase() === view.brand.toLowerCase())) view.brand = '';
   const dateLine = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -122,6 +128,10 @@ export function render() {
     <div class="chips hscroll" role="group" aria-label="Category">${cats.map((c) => `
       <button class="chip${c === view.category ? ' is-on' : ''}" data-cat="${esc(c)}" aria-pressed="${c === view.category}">${esc(c)}</button>`).join('')}
     </div>
+    ${subs.length ? `<div class="chips hscroll chips-sub" role="group" aria-label="Sub-category">
+      <button class="chip chip-sub${view.sub ? '' : ' is-on'}" data-sub="" aria-pressed="${!view.sub}">All ${esc(view.category)}</button>${subs.map((s2) => `
+      <button class="chip chip-sub${s2 === view.sub ? ' is-on' : ''}" data-sub="${esc(s2)}" aria-pressed="${s2 === view.sub}">${esc(s2)}</button>`).join('')}
+    </div>` : ''}
     <section class="stack">
       <h2 class="h2">All belongings <span class="muted">· ${rows.length}</span></h2>
       <div class="filter-row">
@@ -160,8 +170,13 @@ export function mount(root) {
   });
   root.querySelectorAll('[data-cat]').forEach((b) => b.addEventListener('click', () => {
     view.category = b.dataset.cat;
-    root.querySelectorAll('[data-cat]').forEach((x) => {
-      const on = x.dataset.cat === view.category;
+    view.sub = '';
+    root.dispatchEvent(new CustomEvent('paw:rerender', { bubbles: true }));
+  }));
+  root.querySelectorAll('[data-sub]').forEach((b) => b.addEventListener('click', () => {
+    view.sub = b.dataset.sub;
+    root.querySelectorAll('[data-sub]').forEach((x) => {
+      const on = x.dataset.sub === view.sub;
       x.classList.toggle('is-on', on);
       x.setAttribute('aria-pressed', on);
     });

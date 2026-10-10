@@ -50,3 +50,14 @@ test('brands are listed once each, A to Z, ignoring case and blanks', () => {
   assert.deepEqual(brandsOf(items), ['Apple', 'oral-B']);
   assert.equal(normalize({ items: [{ id: 'x' }] }, 'UTC').items[0].brand, '');
 });
+
+test('sub-categories: defaults for older files, kept per category, items get an empty one', async () => {
+  const { DEFAULT_SUBCATEGORIES, subsOf } = await import('../app/js/model.js');
+  const old = normalize({ items: [{ id: 'x' }], categories: { list: ['Personal care', 'Garden'], updatedAt: 5 } }, 'UTC');
+  assert.deepEqual(subsOf(old.categories, 'Personal care'), DEFAULT_SUBCATEGORIES['Personal care']);
+  assert.deepEqual(subsOf(old.categories, 'Garden'), []);
+  assert.equal(old.items[0].subcategory, '');
+  const saved = normalize({ categories: { list: ['Pet'], subs: { Pet: ['Food', 7, ''] }, updatedAt: 9 } }, 'UTC');
+  assert.deepEqual(saved.categories.subs, { Pet: ['Food'] });
+  assert.deepEqual(subsOf(saved.categories, ''), []);
+});

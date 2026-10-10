@@ -1,6 +1,6 @@
 import * as store from '../store.js';
 import { addMonths, isISODate } from '../dates.js';
-import { REMIND_CHOICES, brandsOf } from '../model.js';
+import { REMIND_CHOICES, brandsOf, subsOf } from '../model.js';
 import { shrink } from '../photos.js';
 import { esc, icon, promptDialog, toast } from '../ui.js';
 
@@ -26,6 +26,7 @@ function startForm(id) {
     name: it?.name || '',
     brand: it?.brand || '',
     category: it?.category || '',
+    subcategory: it?.subcategory || '',
     got: it?.got || store.today(),
     expires: it ? Boolean(it.exp) : true,
     exp: it?.exp || '',
@@ -35,6 +36,12 @@ function startForm(id) {
     photo: undefined, // Blob = new photo, null = removed, undefined = unchanged
     previewURL: null,
   };
+}
+
+/** Sub-categories offered for the chosen category (keeps an item's old one even if it was removed). */
+function subChoices() {
+  const subs = subsOf(store.state.data.categories, form.category);
+  return form.subcategory && !subs.includes(form.subcategory) ? [...subs, form.subcategory] : subs;
 }
 
 function photoBox() {
@@ -89,6 +96,13 @@ export function render({ params }) {
         <button type="button" class="chip chip-dashed" data-act="new-cat">+ New</button>
       </div>
     </div>
+
+    ${form.category ? `<div class="field"><span class="field-label" id="sub-label">Sub-category <span class="muted">(${esc(form.category)})</span></span>
+      <div class="chip-row" role="group" aria-labelledby="sub-label">
+        ${subChoices().map((s) => `<button type="button" class="chip chip-sub${s === form.subcategory ? ' is-on' : ''}" data-sub="${esc(s)}" aria-pressed="${s === form.subcategory}">${esc(s)}</button>`).join('')}
+        <button type="button" class="chip chip-dashed" data-act="new-sub">+ New</button>
+      </div>
+    </div>` : ''}
 
     <label class="field"><span class="field-label">Got it on <span class="muted">(effective date)</span></span>
       <input class="input" id="got" type="date" required value="${esc(form.got)}">
@@ -164,8 +178,23 @@ export function mount(root) {
 
   root.querySelectorAll('[data-cat]').forEach((b) => b.addEventListener('click', () => {
     form.category = form.category === b.dataset.cat ? '' : b.dataset.cat;
+    form.subcategory = '';
     rerender();
   }));
+  root.querySelectorAll('[data-sub]').forEach((b) => b.addEventListener('click', () => {
+    form.subcategory = form.subcategory === b.dataset.sub ? '' : b.dataset.sub;
+    rerender();
+  }));
+  $('[data-act="new-sub"]')?.addEventListener('click', async () => {
+    const name = await promptDialog({ title: `New ${form.category} sub-category`, label: 'Name', ok: 'Add' });
+    if (!name) return;
+    const subs = subsOf(store.state.data.categories, form.category);
+    // Reuse the existing spelling if it's already there ("shampoo" → "Shampoo").
+    const existing = subs.find((s) => s.toLowerCase() === name.toLowerCase());
+    if (!existing) await store.setSubcategories(form.category, [...subs, name]);
+    form.subcategory = existing || name;
+    rerender();
+  });
   $('#brand').addEventListener('change', async (e) => {
     if (e.target.value !== NEW_BRAND) {
       form.brand = e.target.value;
@@ -226,6 +255,7 @@ export function mount(root) {
       name: form.name.trim(),
       brand: form.brand.trim(),
       category: form.category,
+      subcategory: form.category ? form.subcategory : '',
       got: form.got,
       exp: form.expires ? form.exp : null,
       remindDays: form.remindDays,

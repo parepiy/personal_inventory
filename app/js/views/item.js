@@ -34,7 +34,7 @@ export function render({ params }) {
   <main class="page page-detail">
     <div class="stack-tight">
       ${it.category || it.brand ? `<div class="chip-row">
-        ${it.category ? `<span class="pill pill-soft">${esc(it.category)}</span>` : ''}
+        ${it.category ? `<span class="pill pill-soft">${esc(it.category)}${it.subcategory ? ` › ${esc(it.subcategory)}` : ''}</span>` : ''}
         ${it.brand ? `<span class="pill pill-brand">${esc(it.brand)}</span>` : ''}
       </div>` : ''}
       <h1 class="h1">${esc(it.name)}</h1>
